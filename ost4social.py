@@ -2,7 +2,7 @@ import sys
 import csv
 import argparse
 import re
-from pyechonest import song
+from pyechonest import song, config
 
 
 __tagre = re.compile("@[a-zA-Z][a-zA-Z0-9]+")
@@ -31,6 +31,11 @@ def remove_extra_space(tweet):
     result = __spacere2.sub(" ", result)
     return result
 
+__fillerre = re.compile(r"\b(?:the|a|an|and|is|am)\b", re.IGNORECASE)
+def remove_filler_words(tweet):
+    result = __fillerre.sub("", tweet)
+    return result
+
 def clean_tweet(tweet):
     result = remove_url(tweet)
     result = remove_tags(result)
@@ -40,12 +45,17 @@ def clean_tweet(tweet):
 
 def get_song(tweet):
     text = tweet[5]
-    print " *", text
-    result = clean_tweet(text)
-    print " -", result
-    return result
+    title = clean_tweet(text)
+    try:
+        results = song.search( title = title,
+                               results = 1,
+                               buckets = ['audio_summary'] )
+        return results
+    except:
+        return []
 
 if __name__ == "__main__":
+    config.ECHO_NEST_API_KEY = "M2WEJZVEYOCWX8IAR"
     parser = argparse.ArgumentParser()
     parser.add_argument( "tweetfile",
                          help = "Source csv file for tweets." )
@@ -55,12 +65,20 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print "Using %s:" % args.tweetfile
     tweetfile = args.tweetfile
-    numtweets = args.num
+    numtweets = int(args.num)
+    print "Numtweets:", numtweets
     with open(tweetfile) as fp:
         tweetcsv = csv.reader(fp)
         total = 0
         for tweet in tweetcsv:
-            song = get_song(tweet)
-            total = total + 1
-            if total > numtweets:
-                break
+            flag = False
+            songs = get_song(tweet)
+            for song in songs:
+                print
+                print "%d : %s" % (total, song)
+                flag = True
+            total = (total + 1) if flag else total
+            print ".",
+            # if numtweets != 0 and total >= numtweets:
+            #     break
+    print

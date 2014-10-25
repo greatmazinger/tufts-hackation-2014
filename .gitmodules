@@ -1,0 +1,3 @@
+[submodule "pyechonest"]
+	path = pyechonest
+	url = https://github.com/echonest/pyechonest.git
